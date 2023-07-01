@@ -5,6 +5,7 @@
 #include <map>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 
 
 class RulesEmptyException : public std::exception
@@ -21,6 +22,8 @@ class lsystem
     private:
         std::string axiom;
         std::map<char, std::string> rules;
+
+        std::string result;
 
         // The rules has to be in the format "F X[+F][-F] X XX" the number of rules doesn't matter
         void parseString(std::string rules);
@@ -40,7 +43,7 @@ class lsystem
 
         // Costruttore di default
 
-        // Costruttore
+        // Costruttori
         lsystem(std::string axiom, std::map<char, std::string> rules);
         lsystem(std::string axiom, std::string rules);
 
@@ -56,12 +59,19 @@ class lsystem
         // Getter
         std::string get_axiom() const;
         std::map<char, std::string> get_rules() const;
+        std::string get_result() const;
 
         // redefinition ostream operator
         friend std::ostream& operator<<(std::ostream& os, const lsystem& system);
 
         // Execute l-system
         void execute(int iteration);
+
+        // Writing the result on file
+        void write(std::string name);
+
+        // Drawing the l-system using cairo lib
+        void draw(std::string name);
 };
 
 #endif

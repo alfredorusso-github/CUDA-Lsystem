@@ -54,6 +54,11 @@ std::map<char, std::string> lsystem::get_rules() const
     return this->rules;
 }
 
+std::string lsystem::get_result() const
+{
+    return this->result;
+}
+
 std::ostream &operator<<(std::ostream &os, const lsystem &system)
 {
     if(system.rules.size() == 0 || system.axiom.empty())
@@ -115,5 +120,28 @@ void lsystem::execute(int iteration)
         result = tmp;
     }
 
-    std::cout << "The result is: " << result << std::endl;
+    // std::cout << "The result is: " << result << std::endl;
+    this->result = result;
+}
+
+void lsystem::write(std::string name)
+{
+    std::ofstream file("../Results/" + name + ".txt", std::ios::out);
+    
+    if (file.is_open())
+    {
+        file << this->result;
+        file.close();
+
+        std::cout << "The string has been written to the file." << std::endl;
+    }
+    else
+    {
+        std::cout << "Unable to open file." << std::endl;
+    }
+}
+
+void lsystem::draw(std::string name)
+{
+    
 }
