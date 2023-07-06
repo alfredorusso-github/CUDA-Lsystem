@@ -226,6 +226,20 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
         else if (this->meanings[c] == TURNLEFT) {
             angle -= turnAngle;
         }
+        else if (this->meanings[c] == PUSH)
+        {
+            this->positions.push(std::make_pair(x, y));
+            this->orientations.push(angle);
+        }
+        else if (this->meanings[c] == POP)
+        {
+            x = this->positions.top().first;
+            y = this->positions.top().second;
+            angle = this->orientations.top();
+
+            this->positions.pop();
+            this->orientations.pop();
+        }
     }
 
     file << "</svg>" << std::endl;
