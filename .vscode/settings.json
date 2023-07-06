@@ -75,6 +75,8 @@
         "variant": "cpp",
         "cfenv": "cpp",
         "any": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "bitset": "cpp",
+        "__nullptr": "cpp"
     }
 }

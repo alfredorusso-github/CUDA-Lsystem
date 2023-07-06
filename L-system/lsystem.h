@@ -20,13 +20,18 @@ class RulesEmptyException : public std::exception
 class lsystem
 {
     private:
+
         std::string axiom;
         std::map<char, std::string> rules;
+        std::map<char, int> meanings;
+        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
+
+        int longestRule;
 
         std::string result;
 
         // The rules has to be in the format "F X[+F][-F] X XX" the number of rules doesn't matter
-        void parseString(std::string rules);
+        void parseString(const std::string rules);
 
         // Custom exception used when a rules is given in a wrong string format
         class RulesWrongFormatException : public std::exception
@@ -40,6 +45,16 @@ class lsystem
         };
 
     public:
+
+        static const int MOVE = 1;
+        static const int DRAW = 2;
+        static const int PUSH = 3;
+        static const int POP = 4;
+        static const int TURNLEFT = 5;
+        static const int TURNRIGHT = 6;
+        static const int DONOTHING = 7;
+
+        static const bool useGPU = true;
 
         // Costruttore di default
 
@@ -61,17 +76,21 @@ class lsystem
         std::map<char, std::string> get_rules() const;
         std::string get_result() const;
 
-        // redefinition ostream operator
+        // Redefinition ostream operator
         friend std::ostream& operator<<(std::ostream& os, const lsystem& system);
 
+        // Let the user to decide symbols meaning
+        void setCustomMeaning(std::string symbols, int meaning);
+
         // Execute l-system
-        void execute(int iteration);
+        void execute(const int iteration);
+        void execute(const int iteration, const bool useGPU);
 
         // Writing the result on file
-        void write(std::string name);
+        void write(const std::string name) const;
 
-        // Drawing the l-system using cairo lib
-        void draw(std::string name);
+        // Drawing the l-system
+        void draw(const std::string name, const double turnAngle, const int stepLength);
 };
 
 #endif

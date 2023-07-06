@@ -2,11 +2,14 @@
 
 int main(int argc, char const *argv[])
 {
-    // Sierpinski arrowhead
-    lsystem system("A", "A B-A-B B A+B+A");
-    system.execute(7);
-    system.write("Sierpinski Arrowhead");
-    system.draw("Sierpinski Arrowhead");
+    lsystem custom("F-G-G", "F F-G+F+G-F G GG");
+    custom.setCustomMeaning("F", custom.DRAW);
+    custom.setCustomMeaning("G", custom.DONOTHING);
+    custom.setCustomMeaning("-", custom.TURNLEFT);
+    custom.setCustomMeaning("+", custom.TURNRIGHT);
+    custom.execute(7);
+    custom.write("Custom");
+    custom.draw("Custom");
 
     return 0;
 }
