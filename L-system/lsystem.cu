@@ -189,7 +189,7 @@ void lsystem::write(std::string name) const
     }
 }
 
-void lsystem::draw(const std::string name, const double turnAngle, const int stepLength)
+void lsystem::draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection)
 {
     if(this->meanings.size() == 0)
     {
@@ -207,7 +207,7 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
     double x = 0.0;
     double y = 0.0;
 
-    double angle = 0.0;
+    double angle = startingDirection;
 
     for (char c : this->result) {
         if (this->meanings[c] == DRAW) {

@@ -64,6 +64,12 @@ class lsystem
         static const int TURNRIGHT = 6;
         static const int DONOTHING = 7;
 
+        // Costant used for specifying which direction to use for start drawing
+        static const int RIGHT = 0;
+        static const int LEFT = 180;
+        static const int UP = 270;
+        static const int DOWN = 90;
+
         static const bool useGPU = true;
 
         // Costruttore di default
@@ -86,6 +92,8 @@ class lsystem
         std::map<char, std::string> get_rules() const;
         std::string get_result() const;
 
+        // Setter
+
         // Redefinition ostream operator
         friend std::ostream& operator<<(std::ostream& os, const lsystem& system);
 
@@ -100,7 +108,7 @@ class lsystem
         void write(const std::string name) const;
 
         // Drawing the l-system
-        void draw(const std::string name, const double turnAngle, const int stepLength);
+        void draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection = RIGHT);
 };
 
 #endif

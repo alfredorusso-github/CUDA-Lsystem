@@ -6,7 +6,7 @@ int main(int argc, char const *argv[])
     lsystem barnsley("X", "X F+[[X]-X]-F[-FX]+X F FF");
     barnsley.execute(7);
     barnsley.write("Barnsley Fern");
-    barnsley.draw("Barnsley Fern", 25, 10);
+    barnsley.draw("Barnsley Fern", 25, 10, lsystem::UP);
 
     return 0;
 }
