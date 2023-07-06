@@ -226,6 +226,14 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
         else if (this->meanings[c] == TURNLEFT) {
             angle -= turnAngle;
         }
+        else if(this->meanings[c] == MOVE)
+        {
+            double newX = x + stepLength * cos( angle * M_PI / 180.0 );
+            double newY = y + stepLength * sin( angle * M_PI / 180.0 );
+
+            x = newX;
+            y = newY;
+        }
         else if (this->meanings[c] == PUSH)
         {
             this->positions.push(std::make_pair(x, y));

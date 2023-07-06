@@ -27,7 +27,7 @@ class lsystem
 
         // Maps used for let the user create his own grammar
         std::map<char, int> meanings;
-        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
+        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'b', MOVE}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
 
         // Stack used in order to deal with backtracked l-system
         std::stack<std::pair<int, int>> positions;
