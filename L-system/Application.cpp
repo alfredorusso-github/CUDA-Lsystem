@@ -9,7 +9,7 @@ int main(int argc, char const *argv[])
     custom.setCustomMeaning("+", custom.TURNRIGHT);
     custom.execute(7);
     custom.write("Custom");
-    custom.draw("Custom");
+    custom.draw("Custom", 20, 10);
 
     return 0;
 }
