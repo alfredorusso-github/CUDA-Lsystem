@@ -1,18 +1,13 @@
 #include "lsystem.h"
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/scan.h>
+
 lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
 {
    this->axiom = axiom;
-   this->rules = rules; 
-
-    for (const auto& pair : this->rules) {
-        const std::string& value = pair.second;
-
-        if(this->longestRule < value.length())
-        {
-            this->longestRule = value.length();
-        }
-    }
+   this->rules = rules;
 }
 
 lsystem::lsystem(std::string axiom, std::string rules): axiom(""), rules({})
@@ -50,7 +45,17 @@ lsystem& lsystem::operator=(const lsystem &other)
 
 lsystem::~lsystem()
 {
+    if(this->rulesKey != nullptr)
+    {
+       cudaFree(this->rulesKey);
+       cudaFree(this->rulesValueLength);
 
+       for (int i = 0; i < this->rulesLength; i++)
+       {
+            cudaFree(this->rulesValue[i]); 
+       }
+       cudaFree(this->rulesValue);
+    }
 }
 
 std::string lsystem::get_axiom() const
@@ -66,6 +71,11 @@ std::map<char, std::string> lsystem::get_rules() const
 std::string lsystem::get_result() const
 {
     return this->result;
+}
+
+std::string lsystem::get_GPUResult() const
+{
+    return this->GPUresult;
 }
 
 std::ostream &operator<<(std::ostream &os, const lsystem &system)
@@ -101,11 +111,6 @@ void lsystem::parseString(const std::string rules)
         }
 
         // std::cout << "Key: " << key << " value: " << value << std::endl;
-
-        if(this->longestRule < value.length())
-        {
-            this->longestRule = value.length();
-        }
 
         this->rules[key] = value;
     }
@@ -147,29 +152,6 @@ void lsystem::execute(const int iteration)
 
     // std::cout << "The result is: " << result << std::endl;
     this->result = result;
-}
-
-void lsystem::execute(const int iteration, const bool useGPU)
-{
-    // int nKeys = this->rules.size();
-
-    // char keys[nKeys];
-    // const char* values[nKeys];
-
-    // int i = 0;
-    // for (auto it = this->rules.begin(); it != this->rules.end(); ++it) {
-    //     keys[i] = it -> first;
-    //     values[i] = this->rules[keys[i]].c_str();
-    //     i++;
-    // }
-
-    // size_t estimatedOutputsize = this->axiom.length() * this->longestRule * iteration;
-
-}
-
-__global__ void lsystemKernel(char* input, char* output, int inputLength, int outputLength, int iterations)
-{
-
 }
 
 void lsystem::write(std::string name) const
@@ -236,17 +218,20 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
         }
         else if (this->meanings[c] == PUSH)
         {
-            this->positions.push(std::make_pair(x, y));
-            this->orientations.push(angle);
+            this->states.push(angle);
+            this->states.push(y);
+            this->states.push(x);
         }
         else if (this->meanings[c] == POP)
         {
-            x = this->positions.top().first;
-            y = this->positions.top().second;
-            angle = this->orientations.top();
+            x = this->states.top();
+            this->states.pop();
 
-            this->positions.pop();
-            this->orientations.pop();
+            y = this->states.top();
+            this->states.pop();
+
+            angle = this->states.top();
+            this->states.pop();
         }
     }
 
@@ -254,4 +239,187 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
     file.close();
 
     std::cout << "Image successfully generated: " << name << std::endl;
+}
+
+/*************************************************
+*                                                *
+*                   GPU STUFF                    *
+*                                                *
+**************************************************/
+
+__global__ void countKernel(const char* axiom, int* out, const char* rulesKey, const int* rulesValueLength, int axiomLength, int rulesLength)
+{
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+    bool found = false;
+
+    if(tid < axiomLength)
+    {
+        for (int i = 0; i < rulesLength; i++)
+        {
+            if(axiom[tid] == rulesKey[i])
+            {
+                out[tid] += rulesValueLength[i];
+                found = true;
+                break; 
+            }
+        }
+
+        if(!found)
+        {
+            out[tid] += 1;
+        }
+    }
+}
+
+__global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rulesValueLength, char** rulesValue, int* offsetArray, int inputLength, int rulesLength)
+{
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+    bool found = false;
+
+    if(tid < inputLength)
+    {
+        for (int i = 0; i < rulesLength; ++i)
+        {
+            if(input[tid] == rulesKey[i])
+            {
+                // printf("Input[%d]: %c\tLetter[%d]: %c\n", tid, input[tid], i, rulesKey[i]);
+
+                found = true;
+
+                int size = rulesValueLength[i];
+                for (int j = 0; j < size; j++)
+                {
+                    // printf("out[%d] = parameters[%d][%d] -> %c\n", offsetArray[tid] + j, i, j, rulesValue[i][j]);
+                    out[offsetArray[tid] + j] = rulesValue[i][j];
+                }
+
+                break;
+            }
+        }
+
+        if(!found)
+        {
+            // printf("out[%d] = input[%d] -> %c\n", offsetArray[tid], tid, input[tid]);
+            out[offsetArray[tid]] = input[tid]; 
+        }
+    }
+}
+
+void PrintArray(int* array, int length)
+{
+    for (int i = 0; i < length; i++)
+    {
+        std::cout << array[i] << " ";
+    }
+    std::cout << std::endl;
+    
+}
+
+void lsystem::execute(const int iteration, const bool useGPU)
+{
+    setupGPUstuff();
+
+    for (int i = 0; i < iteration; i++)
+    {
+        // std::cout << "Input: " << this->GPUresult << std::endl;
+ 
+        int* valuesLength = count();
+        // std::cout << "Counting substitute string length: ";
+        // PrintArray(valuesLength, this->GPUresult.length());
+
+        int* offsetArray;
+        cudaMallocManaged(&offsetArray, (GPUresult.length() + 1) * sizeof(int)); 
+        offsetArray = prefixSum(valuesLength);
+
+        // std::cout << "Calculating offset array: ";
+        // PrintArray(offsetArray, this->GPUresult.length() + 1);
+
+        rewrite(offsetArray);
+        // std::cout << "Output: " << this->GPUresult << std::endl;
+        
+        cudaFree(valuesLength);
+        cudaFree(offsetArray);
+    }
+}
+
+void lsystem::setupGPUstuff()
+{
+    this->GPUresult = this->axiom;
+
+    this->rulesLength = this->rules.size();
+    cudaMallocManaged(&this->rulesKey, this->rulesLength * sizeof(char));
+    cudaMallocManaged(&this->rulesValueLength, this->rulesLength * sizeof(int));
+
+    // Allocating memory for rules string on GPU
+    cudaMallocManaged(&this->rulesValue, this->rulesLength * sizeof(char*));    
+
+    int i = 0;
+    for (const auto& [key, value] : this->rules)
+    {
+        this->rulesKey[i] = key;
+        this->rulesValueLength[i] = value.length();
+
+        // Allocating on GPU memory arrays of string
+        cudaMallocManaged(&this->rulesValue[i], (value.length() + 1) * sizeof(char));
+        strcpy(this->rulesValue[i], value.c_str());
+
+        i++;
+    }
+}
+
+int* lsystem::count()
+{
+    int threads = 1024;
+    int blocks = (this->GPUresult.length() + threads - 1) / threads;
+
+    int* out;
+    cudaMallocManaged(&out, this->GPUresult.length() * sizeof(int));
+    cudaMemset(out, 0, this->GPUresult.length() * sizeof(int));
+
+    char* axiom;
+    cudaMallocManaged(&axiom, this->GPUresult.length() * sizeof(char));
+    memcpy(axiom, this->GPUresult.c_str(), this->GPUresult.length() * sizeof(char));
+
+    countKernel<<<blocks, threads>>>(axiom, out, this->rulesKey, this->rulesValueLength, this->GPUresult.length(), this->rulesLength);
+    cudaDeviceSynchronize();
+
+    return out;
+}
+
+int* lsystem::prefixSum(int* input)
+{
+    thrust::device_vector<int> d_input(input, input + this->GPUresult.length());
+    thrust::device_vector<int> d_output(this->GPUresult.length() + 1);
+
+    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin() + 1);
+
+    int* result;
+    cudaMallocManaged(&result, (this->GPUresult.length() + 1) * sizeof(int));
+    cudaMemcpy(result, thrust::raw_pointer_cast(d_output.data()), (this->GPUresult.length() + 1) * sizeof(int), cudaMemcpyDeviceToDevice);
+
+    return result;
+}
+
+void lsystem::rewrite(int* offsetArray)
+{
+    char* input;
+    cudaMallocManaged(&input, this->GPUresult.length() * sizeof(char));
+    memcpy(input, this->GPUresult.c_str(), this->GPUresult.length() * sizeof(char));
+
+    char* out;
+    cudaMallocManaged(&out, offsetArray[this->GPUresult.length()] * sizeof(char));
+    cudaMemset(out, 0, offsetArray[this->GPUresult.length()] * sizeof(char));
+
+    int threads = 1024;
+    int blocks = (this->GPUresult.length() * threads - 1) / threads;
+
+    RewritingKernel<<<blocks, threads>>>(input, out, this->rulesKey, this->rulesValueLength, this->rulesValue, offsetArray, this->GPUresult.length(), this->rulesLength);
+    cudaDeviceSynchronize();
+
+    this->GPUresult = out;
+
+    cudaFree(input);
+    cudaFree(out);
 }

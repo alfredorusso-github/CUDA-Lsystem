@@ -8,7 +8,6 @@
 #include <fstream>
 #include <stack>
 
-
 class RulesEmptyException : public std::exception
 {
     public:
@@ -22,26 +21,6 @@ class lsystem
 {
     private:
 
-        std::string axiom;
-        std::map<char, std::string> rules;
-
-        // Maps used for let the user create his own grammar
-        std::map<char, int> meanings;
-        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'b', MOVE}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
-
-        // Stack used in order to deal with backtracked l-system
-        std::stack<std::pair<int, int>> positions;
-        std::stack<int> orientations;
-
-        // Value used for making and estimation on how big the array containing the result can be in order to use it with CUDA
-        int longestRule;
-
-        // The result of the l-system
-        std::string result;
-
-        // The rules has to be in the format "F X[+F][-F] X XX" the number of rules doesn't matter
-        void parseString(const std::string rules);
-
         // Custom exception used when a rules is given in a wrong string format
         class RulesWrongFormatException : public std::exception
         {
@@ -52,6 +31,53 @@ class lsystem
                     return "Wrong format for the rules string, check if the rules string is in the correct format";
                 }
         };
+
+        std::string axiom;
+        std::map<char, std::string> rules;
+
+        // Maps used for let the user create his own grammar
+        std::map<char, int> meanings;
+        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'b', MOVE}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
+
+        // Stack used in order to deal with backtracked l-system
+        std::stack<int> states;
+
+        // The result of the l-system
+        std::string result;
+
+        // The rules has to be in the format "F X[+F][-F] X XX" the number of rules doesn't matter
+        void parseString(const std::string rules);
+
+        /*************************************************
+        *                                                * 
+        *                   GPU STUFF                    *
+        *                                                *
+        **************************************************/
+
+        // array of letters of the production rules
+        char* rulesKey = nullptr;
+        
+        // number of letters of the value related to a production rule
+        int* rulesValueLength = nullptr;
+
+        // The array of string related to the values of the production rules
+        char** rulesValue = nullptr;
+
+        // Length of the rulesKey and rulesValueLength arrays
+        int rulesLength;
+
+        // 
+        std::string GPUresult;
+
+        void setupGPUstuff();
+
+        // Method in order to setup and run the kernel for computing the number of elements
+        int* count();
+
+        // Method used to setup the prefix sum of the array using cuda libraries
+        int* prefixSum(int* input);
+
+        void rewrite(int* offsetArray);
 
     public:
 
@@ -91,6 +117,7 @@ class lsystem
         std::string get_axiom() const;
         std::map<char, std::string> get_rules() const;
         std::string get_result() const;
+        std::string get_GPUResult() const;
 
         // Setter
 
@@ -109,6 +136,12 @@ class lsystem
 
         // Drawing the l-system
         void draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection = RIGHT);
+
+        /*************************************************
+        *                                                * 
+        *                   GPU STUFF                    *
+        *                                                *
+        **************************************************/
 };
 
 #endif

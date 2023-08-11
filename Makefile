@@ -19,4 +19,4 @@ $(LSYSTEM)lsystem.o: $(LSYSTEM)lsystem.cu $(LSYSTEM)lsystem.h
 	$(CXX) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -rf $(LSYSTEM)*.o $(EXAMPLES)/*.out
+	rm -rf $(LSYSTEM)*.o $(EXAMPLES)*.out

@@ -77,6 +77,13 @@
         "any": "cpp",
         "complex": "cpp",
         "bitset": "cpp",
-        "__nullptr": "cpp"
+        "__nullptr": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "*.zip": "cpp",
+        "ranges": "cpp",
+        "shared_mutex": "cpp",
+        "__locale": "cpp",
+        "__string": "cpp"
     }
 }
