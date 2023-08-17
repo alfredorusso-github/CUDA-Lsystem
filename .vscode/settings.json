@@ -84,6 +84,8 @@
         "ranges": "cpp",
         "shared_mutex": "cpp",
         "__locale": "cpp",
-        "__string": "cpp"
+        "__string": "cpp",
+        "__bit_reference": "cpp",
+        "ios": "cpp"
     }
 }

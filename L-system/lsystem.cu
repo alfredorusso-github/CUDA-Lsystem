@@ -4,6 +4,16 @@
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 
+#define CHECK(call)                                            
+{                                                              
+	const cudaError_t error = call;
+	if (error != cudaSuccess)
+	{ 
+		fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);
+		fprintf(stderr, "code: %d, reason: %s\n", error, cudaGetErrorString(error));
+	}
+}
+
 lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
 {
    this->axiom = axiom;
@@ -291,7 +301,7 @@ __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rul
                 int size = rulesValueLength[i];
                 for (int j = 0; j < size; j++)
                 {
-                    // printf("out[%d] = parameters[%d][%d] -> %c\n", offsetArray[tid] + j, i, j, rulesValue[i][j]);
+                    // printf("tid: %d\tout[%d] = parameters[%d][%d] -> %c\n", tid, offsetArray[tid] + j, i, j, rulesValue[i][j]);
                     out[offsetArray[tid] + j] = rulesValue[i][j];
                 }
 
@@ -317,28 +327,29 @@ void PrintArray(int* array, int length)
     
 }
 
-void lsystem::execute(const int iteration, const bool useGPU)
+void lsystem::executeOnGPU(const int iteration)
 {
     setupGPUstuff();
 
     for (int i = 0; i < iteration; i++)
     {
         // std::cout << "Input: " << this->GPUresult << std::endl;
- 
+        
         int* valuesLength = count();
         // std::cout << "Counting substitute string length: ";
-        // PrintArray(valuesLength, this->GPUresult.length());
+        // PrintArray(valuesLength, this->GPUresult.length());      
 
+        // std::cout << "Iteration " << i << " string length: " << this->GPUresult.length() << std::endl;
         int* offsetArray;
-        cudaMallocManaged(&offsetArray, (GPUresult.length() + 1) * sizeof(int)); 
-        offsetArray = prefixSum(valuesLength);
+        cudaMallocManaged(&offsetArray, (this->GPUresult.length() + 1) * sizeof(int)); 
+        thrust::exclusive_scan(valuesLength, valuesLength + this->GPUresult.length() + 1, offsetArray);
 
         // std::cout << "Calculating offset array: ";
         // PrintArray(offsetArray, this->GPUresult.length() + 1);
 
         rewrite(offsetArray);
         // std::cout << "Output: " << this->GPUresult << std::endl;
-        
+    
         cudaFree(valuesLength);
         cudaFree(offsetArray);
     }
@@ -371,7 +382,7 @@ void lsystem::setupGPUstuff()
 
 int* lsystem::count()
 {
-    int threads = 1024;
+    int threads = 128;
     int blocks = (this->GPUresult.length() + threads - 1) / threads;
 
     int* out;
@@ -380,46 +391,42 @@ int* lsystem::count()
 
     char* axiom;
     cudaMallocManaged(&axiom, this->GPUresult.length() * sizeof(char));
-    memcpy(axiom, this->GPUresult.c_str(), this->GPUresult.length() * sizeof(char));
+    strcpy(axiom, this->GPUresult.c_str());
 
     countKernel<<<blocks, threads>>>(axiom, out, this->rulesKey, this->rulesValueLength, this->GPUresult.length(), this->rulesLength);
     cudaDeviceSynchronize();
 
+    cudaFree(axiom);
+
     return out;
-}
-
-int* lsystem::prefixSum(int* input)
-{
-    thrust::device_vector<int> d_input(input, input + this->GPUresult.length());
-    thrust::device_vector<int> d_output(this->GPUresult.length() + 1);
-
-    thrust::inclusive_scan(d_input.begin(), d_input.end(), d_output.begin() + 1);
-
-    int* result;
-    cudaMallocManaged(&result, (this->GPUresult.length() + 1) * sizeof(int));
-    cudaMemcpy(result, thrust::raw_pointer_cast(d_output.data()), (this->GPUresult.length() + 1) * sizeof(int), cudaMemcpyDeviceToDevice);
-
-    return result;
 }
 
 void lsystem::rewrite(int* offsetArray)
 {
     char* input;
     cudaMallocManaged(&input, this->GPUresult.length() * sizeof(char));
-    memcpy(input, this->GPUresult.c_str(), this->GPUresult.length() * sizeof(char));
+    strcpy(input, this->GPUresult.c_str());
 
     char* out;
     cudaMallocManaged(&out, offsetArray[this->GPUresult.length()] * sizeof(char));
-    cudaMemset(out, 0, offsetArray[this->GPUresult.length()] * sizeof(char));
+    cudaMemset(out, '0', offsetArray[this->GPUresult.length()] * sizeof(char));
 
-    int threads = 1024;
+    int threads = 128;
     int blocks = (this->GPUresult.length() * threads - 1) / threads;
+    if(blocks == 0) blocks = 1;
 
     RewritingKernel<<<blocks, threads>>>(input, out, this->rulesKey, this->rulesValueLength, this->rulesValue, offsetArray, this->GPUresult.length(), this->rulesLength);
     cudaDeviceSynchronize();
 
-    this->GPUresult = out;
+    // cudaError_t error = cudaGetLastError();
+    // if(error != cudaSuccess)
+    // {
+    //     printf("CUDA Error: %s\n", cudaGetErrorString(error));
+    // }
 
     cudaFree(input);
+
+    this->GPUresult = out;
+
     cudaFree(out);
 }

@@ -96,8 +96,6 @@ class lsystem
         static const int UP = 270;
         static const int DOWN = 90;
 
-        static const bool useGPU = true;
-
         // Costruttore di default
 
         // Costruttori
@@ -129,7 +127,7 @@ class lsystem
 
         // Execute l-system
         void execute(const int iteration);
-        void execute(const int iteration, const bool useGPU);
+        void executeOnGPU(const int iteration);
 
         // Writing the result on file
         void write(const std::string name) const;
