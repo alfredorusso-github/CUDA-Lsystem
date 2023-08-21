@@ -9,8 +9,8 @@ int main(int argc, char const *argv[])
     custom.setCustomMeaning("-", custom.TURNLEFT);
     custom.setCustomMeaning("+", custom.TURNRIGHT);
 
-    double time = MeasureTime(&custom, &lsystem::execute, 15);
-    double GPUtime = MeasureTime(&custom, &lsystem::executeOnGPU, 15);
+    double time = MeasureTime(&custom, &lsystem::execute, 16);
+    double GPUtime = MeasureTime(&custom, &lsystem::executeOnGPU, 16);
     std::cout << "CPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
 
     // Check result

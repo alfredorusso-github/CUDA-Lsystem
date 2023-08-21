@@ -4,15 +4,15 @@
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 
-#define CHECK(call)                                            
-{                                                              
-	const cudaError_t error = call;
-	if (error != cudaSuccess)
-	{ 
-		fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);
-		fprintf(stderr, "code: %d, reason: %s\n", error, cudaGetErrorString(error));
-	}
-}
+// #define CHECK(call)                                            
+// {                                                              
+// 	const cudaError_t error = call;
+// 	if (error != cudaSuccess)
+// 	{ 
+// 		fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);
+// 		fprintf(stderr, "code: %d, reason: %s\n", error, cudaGetErrorString(error));
+// 	}
+// }
 
 lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
 {
@@ -382,18 +382,20 @@ void lsystem::setupGPUstuff()
 
 int* lsystem::count()
 {
-    int threads = 128;
-    int blocks = (this->GPUresult.length() + threads - 1) / threads;
+    size_t n_character = this->GPUresult.length();
+
+    int threads = n_character > 1024 ? 1024 : n_character;
+    int blocks = (n_character + threads - 1) / threads;
 
     int* out;
-    cudaMallocManaged(&out, this->GPUresult.length() * sizeof(int));
-    cudaMemset(out, 0, this->GPUresult.length() * sizeof(int));
+    cudaMallocManaged(&out, n_character * sizeof(int));
+    cudaMemset(out, 0, n_character * sizeof(int));
 
     char* axiom;
-    cudaMallocManaged(&axiom, this->GPUresult.length() * sizeof(char));
-    strcpy(axiom, this->GPUresult.c_str());
+    cudaMalloc((void**) &axiom, n_character * sizeof(char));
+    cudaMemcpy(axiom, this->GPUresult.c_str(), n_character, cudaMemcpyHostToDevice);
 
-    countKernel<<<blocks, threads>>>(axiom, out, this->rulesKey, this->rulesValueLength, this->GPUresult.length(), this->rulesLength);
+    countKernel<<<blocks, threads>>>(axiom, out, this->rulesKey, this->rulesValueLength, n_character, this->rulesLength);
     cudaDeviceSynchronize();
 
     cudaFree(axiom);
@@ -403,30 +405,27 @@ int* lsystem::count()
 
 void lsystem::rewrite(int* offsetArray)
 {
+    size_t n_character = this->GPUresult.length();
+
     char* input;
-    cudaMallocManaged(&input, this->GPUresult.length() * sizeof(char));
-    strcpy(input, this->GPUresult.c_str());
+    cudaMalloc((void**) &input, n_character * sizeof(char));
+    cudaMemcpy(input, this->GPUresult.c_str(), n_character * sizeof(char), cudaMemcpyHostToDevice);
 
-    char* out;
-    cudaMallocManaged(&out, offsetArray[this->GPUresult.length()] * sizeof(char));
-    cudaMemset(out, '0', offsetArray[this->GPUresult.length()] * sizeof(char));
+    char* output;
+    cudaMalloc((void**) &output, offsetArray[n_character] * sizeof(char));
 
-    int threads = 128;
-    int blocks = (this->GPUresult.length() * threads - 1) / threads;
-    if(blocks == 0) blocks = 1;
+    int threads = n_character > 1024 ? 1024 : n_character;
+    int blocks = (n_character + threads - 1) / threads;
 
-    RewritingKernel<<<blocks, threads>>>(input, out, this->rulesKey, this->rulesValueLength, this->rulesValue, offsetArray, this->GPUresult.length(), this->rulesLength);
+    RewritingKernel<<<blocks, threads>>>(input, output, this->rulesKey, this->rulesValueLength, this->rulesValue, offsetArray, n_character, this->rulesLength);
     cudaDeviceSynchronize();
 
-    // cudaError_t error = cudaGetLastError();
-    // if(error != cudaSuccess)
-    // {
-    //     printf("CUDA Error: %s\n", cudaGetErrorString(error));
-    // }
-
-    cudaFree(input);
+    char* out = (char*) malloc(offsetArray[n_character] * sizeof(char));
+    cudaMemcpy(out, output, offsetArray[n_character] * sizeof(char), cudaMemcpyDeviceToHost);
 
     this->GPUresult = out;
 
-    cudaFree(out);
+    cudaFree(input);
+    cudaFree(output);
+    free(out);
 }

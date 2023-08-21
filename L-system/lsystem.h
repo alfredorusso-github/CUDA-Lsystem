@@ -66,17 +66,16 @@ class lsystem
         // Length of the rulesKey and rulesValueLength arrays
         int rulesLength;
 
-        // 
+        // The result computed using GPU
         std::string GPUresult;
 
+        // Method used in order to setup and fill all the previous variables 
         void setupGPUstuff();
 
-        // Method in order to setup and run the kernel for computing the number of elements
+        // Method used to launch a Kernel in order to calculate how many characters a letter generates according to the production rules
         int* count();
 
-        // Method used to setup the prefix sum of the array using cuda libraries
-        int* prefixSum(int* input);
-
+        // Method used to launch a Kernel in order to perform string rewriting
         void rewrite(int* offsetArray);
 
     public:
@@ -95,8 +94,6 @@ class lsystem
         static const int LEFT = 180;
         static const int UP = 270;
         static const int DOWN = 90;
-
-        // Costruttore di default
 
         // Costruttori
         lsystem(std::string axiom, std::map<char, std::string> rules);
@@ -134,12 +131,6 @@ class lsystem
 
         // Drawing the l-system
         void draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection = RIGHT);
-
-        /*************************************************
-        *                                                * 
-        *                   GPU STUFF                    *
-        *                                                *
-        **************************************************/
 };
 
 #endif
