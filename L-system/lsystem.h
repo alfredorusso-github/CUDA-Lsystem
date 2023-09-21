@@ -37,8 +37,7 @@ class lsystem
         std::map<char, std::string> rules;
 
         // Maps used for let the user create his own grammar
-        std::map<char, int> meanings;
-        std::map<char, int> defaultMeaning{{'A', DRAW}, {'B', DRAW}, {'F', DRAW}, {'G', DRAW}, {'b', MOVE}, {'[', PUSH}, {']', POP}, {'-', TURNLEFT}, {'+', TURNRIGHT}};
+        std::map<char, int> meanings{{'A', Draw}, {'B', Draw}, {'F', Draw}, {'G', Draw}, {'b', Move}, {'[', Push}, {']', Pop}, {'-', Turnleft}, {'+', Turnright}};
 
         // Stack used in order to deal with backtracked l-system
         std::stack<int> states;
@@ -81,14 +80,18 @@ class lsystem
 
     public:
 
-        // Constant used when the user want to specify the custom grammar
-        static const int MOVE = 1;
-        static const int DRAW = 2;
-        static const int PUSH = 3;
-        static const int POP = 4;
-        static const int TURNLEFT = 5;
-        static const int TURNRIGHT = 6;
-        static const int DONOTHING = 7;
+        // Enum used when user want to specify a custom grammar
+        enum symbolMeanings
+        {
+            Move,
+            Draw,
+            Push,
+            Pop,
+            Turnleft,
+            Turnright,
+            Donothing
+        };
+        std::string symbolMeaningsName[7] = {"Move", "Draw", "Push", "Pop", "Turnleft", "Turnright", "Donothing"};
 
         // Costant used for specifying which direction to use for start drawing
         static const int RIGHT = 0;
@@ -96,17 +99,17 @@ class lsystem
         static const int UP = 270;
         static const int DOWN = 90;
 
-        // Costruttori
-        lsystem(std::string axiom, std::map<char, std::string> rules);
+        // Constructors
         lsystem(std::string axiom, std::string rules);
+        lsystem(std::string axiom, std::map<char, std::string> rules);
 
         // Copy Constructor
         lsystem(const lsystem& other);
 
-        // Operatore di assegnamento
+        // Assignment Operator
         lsystem &operator=(const lsystem &other);
 
-        // Distruttore
+        // Destructor
         ~lsystem();
 
         // Getter
@@ -114,12 +117,13 @@ class lsystem
         std::map<char, std::string> get_rules() const;
         std::string get_result() const;
         std::string get_GPUResult() const;
+        std::map<char, int> get_meanings() const;
 
         // Redefinition ostream operator
         friend std::ostream& operator<<(std::ostream& os, const lsystem& system);
 
-        // Let the user to decide symbols meaning
-        void setCustomMeaning(std::string symbols, int meaning);
+        // Let the user decide symbols meaning
+        void setMeaning(std::string symbols, int meaning);
 
         // Execute l-system
         void execute(const int iteration);
@@ -128,7 +132,7 @@ class lsystem
         // Writing the result on file
         void write(const std::string name) const;
 
-        // Drawing the l-system
+        // Drawing l-system result
         void draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult = false, const int startingDirection = RIGHT);
 };
 

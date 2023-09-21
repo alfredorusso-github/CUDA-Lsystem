@@ -78,6 +78,11 @@ std::string lsystem::get_GPUResult() const
     return this->GPUresult;
 }
 
+std::map<char, int> lsystem::get_meanings() const
+{
+    return this->meanings;
+}
+
 std::ostream &operator<<(std::ostream &os, const lsystem &system)
 {
     if(system.rules.size() == 0 || system.axiom.empty())
@@ -85,11 +90,20 @@ std::ostream &operator<<(std::ostream &os, const lsystem &system)
         throw RulesEmptyException();
     }
 
-    os << "l-system with axiom: " << system.get_axiom() << " and rules: ";
+    // os << "l-system with axiom: " << system.get_axiom() << " and rules: ";
+    os << "l-system specs" << std::endl;
+    os << "axiom: " << system.get_axiom() << std::endl;
 
+    os << "rules: "; 
     for (const auto& [key, value] : system.get_rules())
     {
-        os << key << " → " << value << "    ";
+        os << key << " → " << value << "  ";
+    }
+
+    os << std::endl <<  "meanings: ";
+    for (const auto& [key, value] : system.get_meanings())
+    {
+        os << key << " → " << system.symbolMeaningsName[value] << "  ";
     }
 
     return os;
@@ -116,7 +130,7 @@ void lsystem::parseString(const std::string rules)
     }
 }
 
-void lsystem::setCustomMeaning(std::string symbols, int meaning)
+void lsystem::setMeaning(std::string symbols, int meaning)
 {
     for(char c: symbols)
     {
@@ -173,11 +187,6 @@ void lsystem::write(std::string name) const
 
 void lsystem::draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult, const int startingDirection)
 {
-    if(this->meanings.size() == 0)
-    {
-        this->meanings = this->defaultMeaning;
-    }
-
     std::ofstream file("../Results/" + name + ".svg");
     if (!file.is_open()) {
         std::cout << "Errore nell'apertura del file." << std::endl;
@@ -194,7 +203,7 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
     std::string whatToDraw = drawGPUResult ? this->GPUresult : this->result;
 
     for (char c : whatToDraw) {
-        if (this->meanings[c] == DRAW) {
+        if (this->meanings[c] == Draw) {
             
             double newX = x + stepLength * cos( angle * M_PI / 180.0 );
             double newY = y + stepLength * sin( angle * M_PI / 180.0 );
@@ -204,13 +213,13 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
             x = newX;
             y = newY;
         }
-        else if (this->meanings[c] == TURNRIGHT) {
+        else if (this->meanings[c] == Turnright) {
             angle += turnAngle;
         }
-        else if (this->meanings[c] == TURNLEFT) {
+        else if (this->meanings[c] == Turnleft) {
             angle -= turnAngle;
         }
-        else if(this->meanings[c] == MOVE)
+        else if(this->meanings[c] == Move)
         {
             double newX = x + stepLength * cos( angle * M_PI / 180.0 );
             double newY = y + stepLength * sin( angle * M_PI / 180.0 );
@@ -218,13 +227,13 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
             x = newX;
             y = newY;
         }
-        else if (this->meanings[c] == PUSH)
+        else if (this->meanings[c] == Push)
         {
             this->states.push(angle);
             this->states.push(y);
             this->states.push(x);
         }
-        else if (this->meanings[c] == POP)
+        else if (this->meanings[c] == Pop)
         {
             x = this->states.top();
             this->states.pop();
