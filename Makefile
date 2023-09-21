@@ -1,4 +1,4 @@
-CXX = nvcc
+CXX = /usr/local/cuda-12.2/bin/nvcc
 
 VPATH=./L-system/:./Examples/
 INCLUDES=-I./L-system/

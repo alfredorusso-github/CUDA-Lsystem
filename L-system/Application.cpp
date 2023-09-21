@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
     // Check result
     size_t sizeCPU = custom.get_result().size();
     size_t sizeGPU = custom.get_GPUResult().size();
-    std::cout << "CPU result size: " << sizeCPU << "\tGPU result size: " << sizeGPU << std::endl;
+    std::cout << "CPU result size: " << sizeCPU << " s\tGPU result size: " << sizeGPU << " s" << std::endl;
 
     std::string CPUresult = custom.get_result();
     std::string GPUresult = custom.get_GPUResult();
@@ -34,6 +34,6 @@ int main(int argc, char const *argv[])
     
     // custom.write("Custom");
     // custom.draw("Custom", 20, 10);
-
+    
     return 0;
 }

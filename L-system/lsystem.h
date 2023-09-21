@@ -7,6 +7,7 @@
 #include <sstream>
 #include <fstream>
 #include <stack>
+#include <cuda_runtime.h>
 
 class RulesEmptyException : public std::exception
 {
@@ -114,8 +115,6 @@ class lsystem
         std::string get_result() const;
         std::string get_GPUResult() const;
 
-        // Setter
-
         // Redefinition ostream operator
         friend std::ostream& operator<<(std::ostream& os, const lsystem& system);
 
@@ -130,7 +129,7 @@ class lsystem
         void write(const std::string name) const;
 
         // Drawing the l-system
-        void draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection = RIGHT);
+        void draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult = false, const int startingDirection = RIGHT);
 };
 
 #endif

@@ -4,16 +4,6 @@
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 
-// #define CHECK(call)                                            
-// {                                                              
-// 	const cudaError_t error = call;
-// 	if (error != cudaSuccess)
-// 	{ 
-// 		fprintf(stderr, "Error: %s:%d, ", __FILE__, __LINE__);
-// 		fprintf(stderr, "code: %d, reason: %s\n", error, cudaGetErrorString(error));
-// 	}
-// }
-
 lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
 {
    this->axiom = axiom;
@@ -181,7 +171,7 @@ void lsystem::write(std::string name) const
     }
 }
 
-void lsystem::draw(const std::string name, const double turnAngle, const int stepLength, const int startingDirection)
+void lsystem::draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult, const int startingDirection)
 {
     if(this->meanings.size() == 0)
     {
@@ -201,7 +191,9 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
 
     double angle = startingDirection;
 
-    for (char c : this->result) {
+    std::string whatToDraw = drawGPUResult ? this->GPUresult : this->result;
+
+    for (char c : whatToDraw) {
         if (this->meanings[c] == DRAW) {
             
             double newX = x + stepLength * cos( angle * M_PI / 180.0 );
@@ -315,16 +307,6 @@ __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rul
             out[offsetArray[tid]] = input[tid]; 
         }
     }
-}
-
-void PrintArray(int* array, int length)
-{
-    for (int i = 0; i < length; i++)
-    {
-        std::cout << array[i] << " ";
-    }
-    std::cout << std::endl;
-    
 }
 
 void lsystem::executeOnGPU(const int iteration)
