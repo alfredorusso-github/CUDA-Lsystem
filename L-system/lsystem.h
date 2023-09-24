@@ -9,12 +9,52 @@
 #include <stack>
 #include <cuda_runtime.h>
 
+class AxiomEmptyExecption : public std::exception
+{
+    public:
+        const char* what() const noexcept override
+        {
+            return "Error occured: Impossible to initialize a l-system with an empty axiom.";
+        }
+};
+
 class RulesEmptyException : public std::exception
 {
     public:
         const char* what() const noexcept override 
         {
-            return "Error occured: impossible to print an l-system not correctly initialized";
+            return "Error occured: impossible to initialize an l-system with no rules.";
+        }
+};
+
+// Custom exception used when a rules is given in a wrong string format
+class RulesWrongFormatException : public std::exception
+{
+    public:
+
+        const char* what() const noexcept override 
+        {
+            return "Wrong format for the rules string, check if the rules string is in the correct format.";
+        }
+};
+
+class EmptyResultExecption : public std::exception
+{
+    public:
+
+        const char* what() const noexcept override 
+        {
+            return "Impossible to operate with an empty result, try to execute the l-system first.";
+        }
+};
+
+class EmptyGpuResultExecption : public std::exception
+{
+    public:
+
+        const char* what() const noexcept override 
+        {
+            return "Impossible to operate with an empty gpu result, try to execute the l-system first, using an Nvidia Card.";
         }
 };
 
@@ -22,22 +62,13 @@ class lsystem
 {
     private:
 
-        // Custom exception used when a rules is given in a wrong string format
-        class RulesWrongFormatException : public std::exception
-        {
-            public:
-
-                const char* what() const noexcept override 
-                {
-                    return "Wrong format for the rules string, check if the rules string is in the correct format";
-                }
-        };
-
         std::string axiom;
         std::map<char, std::string> rules;
 
         // Maps used for let the user create his own grammar
         std::map<char, int> meanings{{'A', Draw}, {'B', Draw}, {'F', Draw}, {'G', Draw}, {'b', Move}, {'[', Push}, {']', Pop}, {'-', Turnleft}, {'+', Turnright}};
+        std::string symbolMeaningsName[7] = {"Move", "Draw", "Push", "Pop", "Turnleft", "Turnright", "Donothing"};
+
 
         // Stack used in order to deal with backtracked l-system
         std::stack<int> states;
@@ -49,10 +80,16 @@ class lsystem
         void parseString(const std::string rules);
 
         /*************************************************
-        *                                                * 
+        *                                                *
         *                   GPU STUFF                    *
         *                                                *
         **************************************************/
+
+        // variable used for checking if GPU is used to compute the l-system result
+        bool isGpuUsed = false;
+
+        // variable used for checking if it's needed to free the resources
+        bool isFreeNeeded = false;
 
         // array of letters of the production rules
         char* rulesKey = nullptr;
@@ -91,9 +128,8 @@ class lsystem
             Turnright,
             Donothing
         };
-        std::string symbolMeaningsName[7] = {"Move", "Draw", "Push", "Pop", "Turnleft", "Turnright", "Donothing"};
 
-        // Costant used for specifying which direction to use for start drawing
+        // Costant used for specifying the starting direction for drawing the l-system
         static const int RIGHT = 0;
         static const int LEFT = 180;
         static const int UP = 270;
@@ -134,6 +170,9 @@ class lsystem
 
         // Drawing l-system result
         void draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult = false, const int startingDirection = RIGHT);
+
+        // Method used inside the destructor in order to free the memory used on GPU
+        void freeMemory();
 };
 
 #endif

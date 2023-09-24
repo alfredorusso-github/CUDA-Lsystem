@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
     std::cout << "Executing GPU algorithm..." << std::endl;
     double GPUtime = MeasureTime(&pitaevskii, &lsystem::executeOnGPU, iteration);
     
-    std::cout << "Pitaevskii tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
+    std::cout << "Pitaevskii Tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
 
     // std::cout << "Pitaevskii tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << std::endl;
 

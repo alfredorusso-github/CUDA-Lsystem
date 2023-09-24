@@ -4,15 +4,19 @@
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
 
-lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
-{
-   this->axiom = axiom;
-   this->rules = rules;
-}
-
 lsystem::lsystem(std::string axiom, std::string rules): axiom(""), rules({})
 {
     this->axiom = axiom;
+
+    if(axiom.length() == 0)
+    {
+        throw AxiomEmptyExecption();
+    }
+
+    if(rules.length() == 0)
+    {
+        throw RulesEmptyException();
+    }
 
     try
     {
@@ -23,6 +27,22 @@ lsystem::lsystem(std::string axiom, std::string rules): axiom(""), rules({})
         std::cout << "Exception occured: " << e.what() << std::endl;
     }
     
+}
+
+lsystem::lsystem(std::string axiom, std::map<char, std::string> rules): axiom(""), rules({})
+{
+    if(axiom.length() == 0)
+    {
+        throw AxiomEmptyExecption();
+    } 
+
+    if(rules.empty())
+    {
+        throw RulesEmptyException();
+    }  
+
+    this->axiom = axiom;
+    this->rules = rules;
 }
 
 lsystem::lsystem(const lsystem& other)
@@ -45,16 +65,24 @@ lsystem& lsystem::operator=(const lsystem &other)
 
 lsystem::~lsystem()
 {
-    if(this->rulesKey != nullptr)
-    {
-       cudaFree(this->rulesKey);
-       cudaFree(this->rulesValueLength);
+    freeMemory();
+}
 
-       for (int i = 0; i < this->rulesLength; i++)
-       {
+void lsystem::freeMemory()
+{
+    if(this->isGpuUsed && this->isFreeNeeded)
+    {
+        cudaFree(this->rulesKey);
+        cudaFree(this->rulesValueLength);
+
+        for (int i = 0; i < this->rulesLength; i++)
+        {
             cudaFree(this->rulesValue[i]); 
-       }
-       cudaFree(this->rulesValue);
+        }
+        cudaFree(this->rulesValue);
+
+        isFreeNeeded = false;
+        isGpuUsed = false;
     }
 }
 
@@ -70,11 +98,21 @@ std::map<char, std::string> lsystem::get_rules() const
 
 std::string lsystem::get_result() const
 {
+    if(this->result.length() == 0)
+    {
+        throw EmptyResultExecption();
+    }
+
     return this->result;
 }
 
 std::string lsystem::get_GPUResult() const
 {
+    if(this->GPUresult.length() == 0)
+    {
+        throw EmptyGpuResultExecption();
+    }
+
     return this->GPUresult;
 }
 
@@ -90,7 +128,6 @@ std::ostream &operator<<(std::ostream &os, const lsystem &system)
         throw RulesEmptyException();
     }
 
-    // os << "l-system with axiom: " << system.get_axiom() << " and rules: ";
     os << "l-system specs" << std::endl;
     os << "axiom: " << system.get_axiom() << std::endl;
 
@@ -168,8 +205,18 @@ void lsystem::execute(const int iteration)
     this->result = result;
 }
 
-void lsystem::write(std::string name) const
+void lsystem::write(const std::string name) const
 {
+    if(this->result.length() == 0)
+    {
+        throw EmptyResultExecption();
+    }
+
+    if(this->GPUresult.length() == 0)
+    {
+        throw EmptyGpuResultExecption();
+    }
+
     std::ofstream file("../Results/" + name + ".txt", std::ios::out);
     
     if (file.is_open())
@@ -187,9 +234,19 @@ void lsystem::write(std::string name) const
 
 void lsystem::draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult, const int startingDirection)
 {
+    if(drawGPUResult && this->GPUresult.length() == 0)
+    {
+        throw EmptyGpuResultExecption();
+    }
+
+    if(this->result.length() == 0)
+    {
+        throw EmptyResultExecption();
+    }
+
     std::ofstream file("../Results/" + name + ".svg");
     if (!file.is_open()) {
-        std::cout << "Errore nell'apertura del file." << std::endl;
+        std::cerr << "An error occured when tried to open/create the files." << std::endl;
         return;
     }
 
@@ -320,6 +377,16 @@ __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rul
 
 void lsystem::executeOnGPU(const int iteration)
 {
+    cudaError_t cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) 
+    {
+        std::cerr << "CUDA initialization error: " << cudaGetErrorString(cudaStatus) << std::endl;
+        return;
+    }
+
+    this->isGpuUsed = true;
+    this->isFreeNeeded = true;
+
     setupGPUstuff();
 
     for (int i = 0; i < iteration; i++)
