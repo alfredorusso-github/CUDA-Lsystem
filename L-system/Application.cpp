@@ -43,8 +43,6 @@ void test_BarnsleyFern()
 
     std::cout << "GPU execution..." << std::endl;
     BarnsleyFernGPUTime = MeasureTime(&barnsley, &lsystem::executeOnGPU, iteration);
-
-    barnsley.freeMemory();
 }
 
 void test_DragonCurve()
@@ -59,8 +57,6 @@ void test_DragonCurve()
 
     std::cout << "GPU execution..." << std::endl;
     DragonCurveGPUTime = MeasureTime(&dragon, &lsystem::executeOnGPU, iteration);
-
-    dragon.freeMemory();
 }
 
 void test_HilbertCurve()
@@ -75,8 +71,6 @@ void test_HilbertCurve()
 
     std::cout << "GPU execution..." << std::endl;
     HilbertCurveGPUTime = MeasureTime(&hilbert, &lsystem::executeOnGPU, iteration);
-
-    hilbert.freeMemory();
 }
 
 void test_IslandCurve()
@@ -91,8 +85,6 @@ void test_IslandCurve()
 
     std::cout << "GPU execution..." << std::endl;
     IslandCurveGPUTime = MeasureTime(&island, &lsystem::executeOnGPU, iteration);
-
-    island.freeMemory();
 }
 
 void test_KochCurve()
@@ -107,8 +99,6 @@ void test_KochCurve()
 
     std::cout << "GPU execution..." << std::endl;
     KochCurveGPUTime = MeasureTime(&koch, &lsystem::executeOnGPU, iteration);
-
-    koch.freeMemory();
 }
 
 void test_Pentaplexity()
@@ -123,8 +113,6 @@ void test_Pentaplexity()
 
     std::cout << "GPU execution..." << std::endl;
     PentaplexityGPUTime = MeasureTime(&pentaplexity, &lsystem::executeOnGPU, iteration);
-
-    pentaplexity.freeMemory();
 }
 
 void test_PitaevskiiTree()
@@ -139,8 +127,6 @@ void test_PitaevskiiTree()
 
     std::cout << "GPU execution..." << std::endl;
     PitaevskiiGPUTime = MeasureTime(&pitaevskii, &lsystem::executeOnGPU, iteration);
-
-    pitaevskii.freeMemory();
 }
 
 void test_SierpinskiArrowhead()
@@ -155,8 +141,6 @@ void test_SierpinskiArrowhead()
 
     std::cout << "GPU execution..." << std::endl;
     ArrowheadGPUTime = MeasureTime(&arrowhead, &lsystem::executeOnGPU, iteration);
-
-    arrowhead.freeMemory();
 }
 
 void test_SierpinskiTriangle()
@@ -171,8 +155,6 @@ void test_SierpinskiTriangle()
 
     std::cout << "GPU execution..." << std::endl;
     TriangleGPUTime = MeasureTime(&triangle, &lsystem::executeOnGPU, iteration);
-
-    triangle.freeMemory();
 }
 
 void test_Sticks()
@@ -187,8 +169,6 @@ void test_Sticks()
 
     std::cout << "GPU execution..." << std::endl;
     SticksGPUTime = MeasureTime(&sticks, &lsystem::executeOnGPU, iteration);
-
-    sticks.freeMemory();
 }
 
 void printResults()
@@ -213,11 +193,13 @@ void writeResults()
     }
 
     std::string result = "Results\nBarnsley Fern\tCPU time: " + std::to_string(BarnsleyFernTime) + "\tGPU time: " + std::to_string(BarnsleyFernGPUTime) +
-        "\nDragon Curve\tCPU time: " + std::to_string(DragonCurveTime) + "\tGPU time: " + std::to_string(DragonCurveGPUTime) + "\nHilber Curve\tCPU time: " + std::to_string(HilbertCurveTime) +
-        "\tGPU time: " + std::to_string(HilbertCurveGPUTime) + "\nKoch Curve\tCPU time: " + std::to_string(KochCurveTime) + "\tGPU time: " + std::to_string(KochCurveGPUTime) +
-        "\nPentaplexity\tCPU time: " + std::to_string(PentaplexityTime) + "\tGPU time: " + std::to_string(PentaplexityGPUTime) + "\nSierpinski Arrowhead\tCPU time: " +
-        std::to_string(ArrowheadTime) + "\tGPU time: " + std::to_string(ArrowheadGPUTime) + "\nSierpinski Triangle\tCPU time: " + std::to_string(TriangleTime) + "\tGPU time: " +
-        std::to_string(TriangleGPUTime) + "\nSticks\tCPU time: " + std::to_string(SticksTime) + "\tGPU time: " + std::to_string(SticksGPUTime);
+        "\nDragon Curve\tCPU time: " + std::to_string(DragonCurveTime) + "\tGPU time: " + std::to_string(DragonCurveGPUTime) + 
+        "\nHilber Curve\tCPU time: " + std::to_string(HilbertCurveTime) + "\tGPU time: " + std::to_string(HilbertCurveGPUTime) + 
+        "\nKoch Curve\tCPU time: " + std::to_string(KochCurveTime) + "\tGPU time: " + std::to_string(KochCurveGPUTime) +
+        "\nPentaplexity\tCPU time: " + std::to_string(PentaplexityTime) + "\tGPU time: " + std::to_string(PentaplexityGPUTime) + 
+        "\nSierpinski Arrowhead\tCPU time: " + std::to_string(ArrowheadTime) + "\tGPU time: " + std::to_string(ArrowheadGPUTime) + 
+        "\nSierpinski Triangle\tCPU time: " + std::to_string(TriangleTime) + "\tGPU time: " + std::to_string(TriangleGPUTime) + 
+        "\nSticks\tCPU time: " + std::to_string(SticksTime) + "\tGPU time: " + std::to_string(SticksGPUTime);
 
     outputFile << result << std::endl;
 

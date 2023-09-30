@@ -65,6 +65,7 @@ lsystem& lsystem::operator=(const lsystem &other)
 
 lsystem::~lsystem()
 {
+    std::cout << "Calling destructor" << std::endl;
     freeMemory();
 }
 
