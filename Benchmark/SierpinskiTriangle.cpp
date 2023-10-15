@@ -13,9 +13,10 @@ int main(int argc, char const *argv[])
     std::cout << "Executing on GPU..." << std::endl;
     double GPUtime = MeasureTime(&triangle, &lsystem::executeOnGPU, iteration);
 
-    std::cout << "Sierpinski Triangle" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
+    std::cout << "Executing on GPU with modules..." << std::endl;
+    double GPUtimeModules = MeasureTime(&triangle, &lsystem::executeOnGPUWithModules, iteration, 20);
 
-    std::cout << "CPU size: " << triangle.get_result().length() << "\tGPU size: " << triangle.get_GPUResult().size() << std::endl;
+    std::cout << "Sierpinski Triangle" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << "\tGPU modules time: " << GPUtimeModules << std::endl;
 
     return 0;
 }

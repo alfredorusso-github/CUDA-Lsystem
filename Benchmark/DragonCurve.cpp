@@ -13,7 +13,10 @@ int main(int argc, char const *argv[])
     std::cout << "Executing on GPU..." << std::endl;
     double GPUtime = MeasureTime(&dragon, &lsystem::executeOnGPU, iteration);
 
-    std::cout << "Dragon Curve" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
+    std::cout << "Executing on GPU with modules..." << std::endl;
+    double GPUtimeModules = MeasureTime(&dragon, &lsystem::executeOnGPUWithModules, iteration, 32);
+
+    std::cout << "Dragon Curve" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime <<  "\tGPU modules time: " << GPUtimeModules << std::endl;
 
     return 0;
 }

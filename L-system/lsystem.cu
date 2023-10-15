@@ -3,6 +3,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/scan.h>
+#include<math.h>
 
 lsystem::lsystem(std::string axiom, std::string rules): axiom(""), rules({})
 {
@@ -65,7 +66,6 @@ lsystem& lsystem::operator=(const lsystem &other)
 
 lsystem::~lsystem()
 {
-    std::cout << "Calling destructor" << std::endl;
     freeMemory();
 }
 
@@ -206,19 +206,21 @@ void lsystem::execute(const int iteration)
     this->result = result;
 }
 
-void lsystem::write(const std::string name) const
+void lsystem::write(const std::string name, const bool writeGPUResult) const
 {
-    if(this->result.length() == 0)
-    {
-        throw EmptyResultExecption();
-    }
-
-    if(this->GPUresult.length() == 0)
+    if(writeGPUResult && this->GPUresult.length() == 0)
     {
         throw EmptyGpuResultExecption();
     }
 
+    if(!writeGPUResult && this->result.length() == 0)
+    {
+        throw EmptyResultExecption();
+    }
+
     std::ofstream file("../Results/" + name + ".txt", std::ios::out);
+
+    std::string whatToWrite = writeGPUResult ? this->GPUresult : this->result;
     
     if (file.is_open())
     {
@@ -240,7 +242,7 @@ void lsystem::draw(const std::string name, const double turnAngle, const int ste
         throw EmptyGpuResultExecption();
     }
 
-    if(this->result.length() == 0)
+    if(!drawGPUResult && this->result.length() == 0)
     {
         throw EmptyResultExecption();
     }
@@ -341,6 +343,37 @@ __global__ void countKernel(const char* axiom, int* out, const char* rulesKey, c
     }
 }
 
+__global__ void countKernelWithModules(const char* axiom, int* out, const char* rulesKey, const int* rulesValueLength, int axiomLength, int rulesLength, int n_modules, int modulesLength)
+{
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+    bool found = false;
+
+    if(tid < n_modules)
+    {
+        for (int i = 0; i < modulesLength; i++)
+        {
+            if(tid * modulesLength + i == axiomLength) break;
+
+            for (int j = 0; j < rulesLength; j++)
+            {
+                if(axiom[tid * modulesLength + i] == rulesKey[j])
+                {
+                    out[tid] += rulesValueLength[j];
+                    found = true;
+                }
+            }
+
+            if(!found)
+            {
+                out[tid] += 1;
+            }
+
+            found = false;
+        }
+    }
+}
+
 __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rulesValueLength, char** rulesValue, int* offsetArray, int inputLength, int rulesLength)
 {
     int tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -349,7 +382,7 @@ __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rul
 
     if(tid < inputLength)
     {
-        for (int i = 0; i < rulesLength; ++i)
+        for (int i = 0; i < rulesLength; i++)
         {
             if(input[tid] == rulesKey[i])
             {
@@ -371,7 +404,53 @@ __global__ void RewritingKernel(char* input, char* out, char* rulesKey, int* rul
         if(!found)
         {
             // printf("out[%d] = input[%d] -> %c\n", offsetArray[tid], tid, input[tid]);
+            printf("");
             out[offsetArray[tid]] = input[tid]; 
+        }
+    }
+}
+
+__global__ void RewritingKernelWithModules(char* input, char* out, char* rulesKey, int* rulesValueLength, char** rulesValue, int* offsetArray, int inputLength, int rulesLength, int n_modules, int modulesLength)
+{
+    int tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+    bool found = false;
+
+    if(tid < n_modules)
+    {
+        int index = 0;
+
+        for (int i = 0; i < modulesLength; i++)
+        {
+            if(tid * modulesLength + i == inputLength) break;
+
+            // printf("tid: %d \t input[%d] = %c \n", tid, tid * modulesLength + i, input[tid * modulesLength + i]);
+            
+            for (int j = 0; j < rulesLength; j++)
+            {
+                if(input[tid * modulesLength + i] == rulesKey[j])
+                {
+                    found = true;
+                    // if (tid == 6) printf("input[%d] = %c found at rulesKey[%d] = %c\n", tid * modulesLength + i, input[tid * modulesLength + i], j, rulesKey[j]);
+
+                    int size = rulesValueLength[j];
+                    for (int k = 0; k < size; k++)
+                    {
+                        out[offsetArray[tid] + index] = rulesValue[j][k];
+                        // printf("out[%d] = %c\n", offsetArray[tid] + index, rulesValue[j][k]);
+                        index += 1;
+                    }
+                }
+            }
+
+            if(!found)
+            {
+                out[offsetArray[tid] + index] = input[tid * modulesLength + i];
+                // printf("Not found, out[%d] = %c\n", offsetArray[tid] + index, input[tid * modulesLength + i]);
+                index += 1;
+            }
+
+            found = false;
         }
     }
 }
@@ -403,12 +482,48 @@ void lsystem::executeOnGPU(const int iteration)
         cudaMallocManaged(&offsetArray, (this->GPUresult.length() + 1) * sizeof(int)); 
         thrust::exclusive_scan(valuesLength, valuesLength + this->GPUresult.length() + 1, offsetArray);
 
+        // for (int i = 0; i < this->GPUresult.length() + 1; i++)
+        // {
+        //     printf("%d ", offsetArray[i]);
+        // }
+        // printf("\n");        
+
         // std::cout << "Calculating offset array: ";
         // PrintArray(offsetArray, this->GPUresult.length() + 1);
 
         rewrite(offsetArray);
         // std::cout << "Output: " << this->GPUresult << std::endl;
     
+        cudaFree(valuesLength);
+        cudaFree(offsetArray);
+    }
+}
+
+void lsystem::executeOnGPUWithModules(const int iteration, const int modulesLength)
+{
+    cudaError_t cudaStatus = cudaSetDevice(0);
+    if (cudaStatus != cudaSuccess) 
+    {
+        std::cerr << "CUDA initialization error: " << cudaGetErrorString(cudaStatus) << std::endl;
+        return;
+    }
+
+    this->isGpuUsed = true;
+    this->isFreeNeeded = true;
+
+    setupGPUstuff();
+
+    for (int i = 0; i < iteration; i++)
+    {
+        int* valuesLength = countWithModules(modulesLength);    
+
+        int* offsetArray;
+        int n_modules = ceil(static_cast<float>(this->GPUresult.length()) / modulesLength);
+        cudaMallocManaged(&offsetArray, (n_modules + 1) * sizeof(int));
+        thrust::exclusive_scan(valuesLength, valuesLength + n_modules + 1, offsetArray);
+
+        rewriteWithModules(offsetArray, modulesLength);          
+
         cudaFree(valuesLength);
         cudaFree(offsetArray);
     }
@@ -462,6 +577,31 @@ int* lsystem::count()
     return out;
 }
 
+int* lsystem::countWithModules(const int modulesLength)
+{
+    size_t n_character = this->GPUresult.length();
+    size_t n_modules = ceil(static_cast<float>(this->GPUresult.length()) / modulesLength);
+    // std::cout << "Modules: " << n_modules << std::endl;
+
+    int threads = n_modules >  1024 ? 1024 : n_modules;
+    int blocks = (n_modules + threads - 1) / threads;
+
+    int* out;
+    cudaMallocManaged(&out, n_modules * sizeof(int));
+    cudaMemset(out, 0, n_modules * sizeof(int));
+
+    char* axiom;
+    cudaMalloc((void**) &axiom, n_character * sizeof(char));
+    cudaMemcpy(axiom, this->GPUresult.c_str(), n_character, cudaMemcpyHostToDevice);
+
+    countKernelWithModules<<<blocks, threads>>>(axiom, out, this->rulesKey, this->rulesValueLength, n_character, this->rulesLength, n_modules, modulesLength); 
+    cudaDeviceSynchronize();
+
+    cudaFree(axiom);
+    
+    return out;
+}
+
 void lsystem::rewrite(int* offsetArray)
 {
     size_t n_character = this->GPUresult.length();
@@ -481,6 +621,36 @@ void lsystem::rewrite(int* offsetArray)
 
     char* out = (char*) malloc(offsetArray[n_character] * sizeof(char));
     cudaMemcpy(out, output, offsetArray[n_character] * sizeof(char), cudaMemcpyDeviceToHost);
+
+    this->GPUresult = out;
+
+    cudaFree(input);
+    cudaFree(output);
+    free(out);
+}
+
+void lsystem::rewriteWithModules(int* offsetArray, const int modulesLength)
+{
+    size_t n_character = this->GPUresult.length();
+    size_t n_modules = ceil(static_cast<float>(this->GPUresult.length()) / modulesLength);
+    size_t output_characters = offsetArray[n_modules];
+
+    char* input;
+    cudaMalloc((void**) &input, n_character * sizeof(char));
+    cudaMemcpy(input, this->GPUresult.c_str(), n_character * sizeof(char), cudaMemcpyHostToDevice);
+
+    char* output = nullptr;
+    cudaMalloc((void**) &output, output_characters * sizeof(char));
+    cudaMemset(output, 'a', output_characters * sizeof(char));
+
+    int threads = n_modules > 1024 ? 1024 : n_modules;
+    int blocks = (n_modules + threads - 1) / threads;
+
+    RewritingKernelWithModules<<<blocks, threads>>>(input, output, this->rulesKey, this->rulesValueLength, this->rulesValue, offsetArray, n_character, this->rulesLength, n_modules, modulesLength);
+    cudaDeviceSynchronize();
+
+    char* out = (char*) malloc(output_characters * sizeof(char));
+    cudaMemcpy(out, output, output_characters * sizeof(char), cudaMemcpyDeviceToHost);
 
     this->GPUresult = out;
 

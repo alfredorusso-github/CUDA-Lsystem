@@ -58,6 +58,16 @@ class EmptyGpuResultExecption : public std::exception
         }
 };
 
+class WrongModulesLengthExecption : public std::exception
+{
+    public:
+
+        const char* what() const noexcept override 
+        {
+            return "Impossible to operate with a modules lenght grater than the axiom legnth itself.";
+        }
+};
+
 class lsystem
 {
     private:
@@ -68,7 +78,6 @@ class lsystem
         // Maps used for let the user create his own grammar
         std::map<char, int> meanings{{'A', Draw}, {'B', Draw}, {'F', Draw}, {'G', Draw}, {'b', Move}, {'[', Push}, {']', Pop}, {'-', Turnleft}, {'+', Turnright}};
         std::string symbolMeaningsName[7] = {"Move", "Draw", "Push", "Pop", "Turnleft", "Turnright", "Donothing"};
-
 
         // Stack used in order to deal with backtracked l-system
         std::stack<int> states;
@@ -111,9 +120,11 @@ class lsystem
 
         // Method used to launch a Kernel in order to calculate how many characters a letter generates according to the production rules
         int* count();
+        int* countWithModules(const int modulesLength);
 
         // Method used to launch a Kernel in order to perform string rewriting
         void rewrite(int* offsetArray);
+        void rewriteWithModules(int* offsetArray, const int modulesLength);
 
     public:
 
@@ -164,9 +175,10 @@ class lsystem
         // Execute l-system
         void execute(const int iteration);
         void executeOnGPU(const int iteration);
+        void executeOnGPUWithModules(const int iteration, const int modulesLenght);
 
         // Writing the result on file
-        void write(const std::string name) const;
+        void write(const std::string name, const bool writeGPUResult = false) const;
 
         // Drawing l-system result
         void draw(const std::string name, const double turnAngle, const int stepLength, const bool drawGPUResult = false, const int startingDirection = RIGHT);

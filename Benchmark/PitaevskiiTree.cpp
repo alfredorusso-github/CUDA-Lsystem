@@ -12,12 +12,11 @@ int main(int argc, char const *argv[])
 
     std::cout << "Executing GPU algorithm..." << std::endl;
     double GPUtime = MeasureTime(&pitaevskii, &lsystem::executeOnGPU, iteration);
+
+    std::cout << "Executing GPU algorithm with modules..." << std::endl;
+    double GPUtimeModules = MeasureTime(&pitaevskii, &lsystem::executeOnGPUWithModules, iteration, 10);
     
-    std::cout << "Pitaevskii Tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
-
-    // std::cout << "Pitaevskii tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << std::endl;
-
-    std::cout << "CPU size: " << pitaevskii.get_result().length() << "\tGPU size: " << pitaevskii.get_GPUResult().length() << std::endl;
+    std::cout << "Pitaevskii Tree" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << "\tGPU modules time: " << GPUtimeModules << std::endl;
 
     return 0;
 }

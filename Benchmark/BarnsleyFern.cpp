@@ -12,10 +12,11 @@ int main(int argc, char const *argv[])
 
     std::cout << "Executing GPU algorithm..." << std::endl;
     double GPUtime = MeasureTime(&barnsley, &lsystem::executeOnGPU, iteration);
-    
-    std::cout << "Barnsley Fern" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << std::endl;
 
-    std::cout << "CPU size: " << barnsley.get_result().length() << "\tGPU size: " << barnsley.get_GPUResult().length() << std::endl;
+    std::cout << "Executing GPU algorithm with modules..." << std::endl;
+    double GPUtimeModules = MeasureTime(&barnsley, &lsystem::executeOnGPUWithModules, iteration, 35);
+    
+    std::cout << "Barnsley Fern" << "\t Iteration: " << iteration << "\tCPU Time: " << time << "\tGPU Time: " << GPUtime << "\tGPU modules time: " << GPUtimeModules << std::endl;
 
     return 0;
 }
