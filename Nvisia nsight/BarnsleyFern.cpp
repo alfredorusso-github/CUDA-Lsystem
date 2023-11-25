@@ -1,13 +1,13 @@
 #include "../L-system/lsystem.h"
+#include "../utils/MeasureTime.h"
 
 int main(int argc, char const *argv[])
 {
     // Barnsley fern
     lsystem barnsley("X", "X F+[[X]-X]-F[-FX]+X F FF");
-    barnsley.execute(7);
-    barnsley.executeOnGPU(7);
-    barnsley.write("Barnsley Fern", true);
-    barnsley.draw("Barnsley Fern", 25, 10, true, lsystem::UP);
+    int iteration = 14;
+
+    barnsley.executeOnGPUWithModules(iteration, 35);
 
     return 0;
 }

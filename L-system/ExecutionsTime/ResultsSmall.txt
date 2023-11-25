@@ -1,0 +1,9 @@
+Results
+Barnsley Fern	CPU time: 0.002433	GPU time: 0.006617	GPU Module time: 0.005889
+Dragon Curve	CPU time: 0.000959	GPU time: 0.011217	GPU Module time: 0.005209
+Hilber Curve	CPU time: 0.000343	GPU time: 0.004483	GPU Module time: 0.003188
+Koch Curve	CPU time: 0.000025	GPU time: 0.003010	GPU Module time: 0.002043
+Pentaplexity	CPU time: 0.000254	GPU time: 0.003261	GPU Module time: 0.003342
+Sierpinski Arrowhead	CPU time: 0.000160	GPU time: 0.101087	GPU Module time: 0.004921
+Sierpinski Triangle	CPU time: 0.000445	GPU time: 0.007352	GPU Module time: 0.004809
+Sticks	CPU time: 0.006811	GPU time: 0.008523	GPU Module time: 0.006850
