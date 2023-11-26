@@ -1,4 +1,4 @@
-# CUDA- L-system
+# CUDA L-system
 This work is focused on extends the classic L-system formalism through the use of the GPU enabling concurrent execution of its components.
 
 ## L-system formalism
@@ -60,7 +60,7 @@ lsystem lsystem(options)
 `options` must contains:
 
 * `axiom` A string representing the initial axiom.
-* `rules` A string representing the rules like "X F+[[X]-X]-F[-FX]+X F FF".
+* `rules` A string representing one or more rules like "X F+[[X]-X]-F[-FX]+X F FF".
 
 At this stage it is possible to change or add a way on how a symbol will be interpreted, using the following method:
 ```c++ 
@@ -68,7 +68,7 @@ lsystem.setMeaning(options)
 ```
 `options` must contains:
 * `symbol` A string representing the symbol for which you want to add a meaning.
-* `meaning` An int representing the meaning. It is advisable to use the symbolMeaning enum inside the lsystem class.
+* `meaning` An int representing a meaning to give to the symbol specified. It is advisable to use the symbolMeaning enumeration inside the lsystem class.
 
 Then it is possible to execute the L-system with the following ways:
 ```c++ 
@@ -98,7 +98,7 @@ lsystem.draw(options)
 * `turn angle` A double representing an angle expressed in `degree` which specify the rotation amount when the turtle has to rotate itself.
 * `step length` A double representing the length of the segment drawn.
 * `draw gpu result` A boolean value which represent the choice to draw the gpu result instead of the cpu one. The default value is `false`.
-* `starting direction` An int which represent the initial orientation of the turtle so in which direction it starts drawing. It is advisable to use the direction specified inside the class like:
+* `starting direction` An int which represent the initial orientation of the turtle, so in which direction it starts drawing. It is advisable to use the direction specified inside the class like:
 	```c++ 
 	lsystem::UP
 	lsystem::DOWN
@@ -124,6 +124,6 @@ int main(int argc, char const *argv[])
 }
 ```
 
-The above one represents the Barnsley fern L-system which result can be seen in the L-system formalism paragraph.
+The above one represents the Barnsley fern L-system whose result can be seen in the L-system formalism paragraph.
 
 
